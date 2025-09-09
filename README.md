@@ -403,7 +403,7 @@ export const DEFAULT_OPTIONS: Required<RevaliOptions>;
 
 ## Roadmap
 
-### Completed (v0.1.0)
+### Completed (v0.2.0)
 
 - ✅ Basic cache & subscription system
 - ✅ Request deduplication
@@ -416,14 +416,14 @@ export const DEFAULT_OPTIONS: Required<RevaliOptions>;
 - ✅ Full TypeScript support
 - ✅ Cache introspection APIs
 
-### In Progress (v0.2.0)
+### In Progress (v0.3.0)
 
 - [ ] Polling / interval revalidation
 - [ ] Request cancellation (AbortController)
 - [ ] Middleware system
 - [ ] Built-in React/Vue/Svelte hooks
 
-### Future (v0.3.0)
+### Future (v0.4.0)
 
 - [ ] Pagination & infinite loading
 - [ ] Offline support with persistence
