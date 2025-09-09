@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revali - Vanilla JavaScript Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 24px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 32px;
+        }
+
+        .demo-section {
+            margin-bottom: 32px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .demo-section h2 {
+            color: #444;
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #005c99;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .secondary {
+            background: #6c757d;
+        }
+
+        .secondary:hover:not(:disabled) {
+            background: #5a6268;
+        }
+
+        .danger {
+            background: #dc3545;
+        }
+
+        .danger:hover:not(:disabled) {
+            background: #c82333;
+        }
+
+        .status {
+            padding: 12px;
+            margin: 12px 0;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .loading {
+            background: #e3f2fd;
+            color: #1565c0;
+            border-left: 4px solid #2196f3;
+        }
+
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #f44336;
+        }
+
+        .user-list {
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .user-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-item:last-child {
+            border-bottom: none;
+        }
+
+        .cache-info {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .logs {
+            background: #1e1e1e;
+            color: #f0f0f0;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+
+        .log-entry {
+            margin: 2px 0;
+        }
+
+        .log-info { color: #4fc3f7; }
+        .log-success { color: #81c784; }
+        .log-error { color: #e57373; }
+        .log-warning { color: #ffb74d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Revali Demo</h1>
+        <p class="subtitle">Framework-agnostic SWR data fetching library with caching, error handling, and optimistic updates</p>
+
+        <!-- Basic Data Fetching -->
+        <div class="demo-section">
+            <h2>📡 Basic Data Fetching with Caching</h2>
+            <div class="controls">
+                <button onclick="fetchUsers()">Fetch Users</button>
+                <button onclick="fetchUsersCached()">Fetch Users (Cached 30s)</button>
+                <button onclick="clearUsersCache()">Clear Cache</button>
+            </div>
+            <div id="users-status" class="status loading" style="display: none;">Loading...</div>
+            <div id="users-list" class="user-list"></div>
+        </div>
+
+        <!-- Subscription & Real-time Updates -->
+        <div class="demo-section">
+            <h2>🔔 Subscription & Real-time Updates</h2>
+            <div class="controls">
+                <button onclick="subscribeToUsers()">Subscribe to Users</button>
+                <button onclick="unsubscribeFromUsers()">Unsubscribe</button>
+                <button onclick="simulateDataChange()">Simulate Data Change</button>
+            </div>
+            <div id="subscription-status" class="status" style="display: none;"></div>
+            <div id="subscription-data"></div>
+        </div>
+
+        <!-- Optimistic Updates -->
+        <div class="demo-section">
+            <h2>⚡ Optimistic Updates</h2>
+            <div class="input-group">
+                <input type="text" id="new-user-name" placeholder="Enter new user name" />
+                <button onclick="addUserOptimistic()">Add User (Optimistic)</button>
+            </div>
+            <div class="input-group">
+                <input type="number" id="user-id-update" placeholder="User ID" />
+                <input type="text" id="new-user-email" placeholder="New email" />
+                <button onclick="updateUserOptimistic()">Update User Email</button>
+            </div>
+            <div id="optimistic-status" class="status" style="display: none;"></div>
+        </div>
+
+        <!-- Error Handling & Retry -->
+        <div class="demo-section">
+            <h2>🔥 Error Handling & Retry</h2>
+            <div class="controls">
+                <button onclick="fetchWithError()">Trigger Error (Will Retry)</button>
+                <button onclick="fetchWithFatalError()">Trigger Fatal Error</button>
+            </div>
+            <div id="error-status" class="status" style="display: none;"></div>
+        </div>
+
+        <!-- Cache Management -->
+        <div class="demo-section">
+            <h2>💾 Cache Management</h2>
+            <div class="controls">
+                <button onclick="showCacheInfo()">Show Cache Info</button>
+                <button onclick="clearAllCache()">Clear All Cache</button>
+                <button onclick="triggerGlobalRevalidation()">Trigger Revalidation</button>
+            </div>
+            <div id="cache-info" class="cache-info"></div>
+        </div>
+
+        <!-- Activity Logs -->
+        <div class="demo-section">
+            <h2>📝 Activity Logs</h2>
+            <button onclick="clearLogs()" class="secondary">Clear Logs</button>
+            <div id="activity-logs" class="logs"></div>
+        </div>
+    </div>
+
+    <!-- Include Revali library -->
+    <script type="module">
+        // In a real project, you would import from 'revali'
+        // import { revaliFetch, subscribe, mutate, clearCache, getCacheInfo, cleanup, triggerRevalidation } from 'revali';
+        
+        // For this demo, we'll simulate the Revali API with a mock implementation
+        
+        // Mock API endpoints and data
+        let mockUsers = [
+            { id: 1, name: 'John Doe', email: 'john@example.com' },
+            { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
+            { id: 3, name: 'Bob Johnson', email: 'bob@example.com' }
+        ];
+
+        let nextUserId = 4;
+        let shouldFailRequest = false;
+        let shouldFatalError = false;
+
+        // Mock fetch function
+        const mockFetch = async (url, options = {}) => {
+            await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+            
+            if (shouldFatalError) {
+                shouldFatalError = false;
+                throw new Error('Fatal server error - no retry');
+            }
+
+            if (shouldFailRequest) {
+                shouldFailRequest = false;
+                throw new Error('Network error - will retry');
+            }
+
+            if (url.includes('/users')) {
+                if (options.method === 'POST') {
+                    const newUser = JSON.parse(options.body);
+                    newUser.id = nextUserId++;
+                    mockUsers.push(newUser);
+                    return { ok: true, json: () => Promise.resolve(newUser) };
+                }
+
+                if (options.method === 'PUT') {
+                    const userId = parseInt(url.split('/').pop());
+                    const updates = JSON.parse(options.body);
+                    const userIndex = mockUsers.findIndex(u => u.id === userId);
+                    if (userIndex !== -1) {
+                        mockUsers[userIndex] = { ...mockUsers[userIndex], ...updates };
+                        return { ok: true, json: () => Promise.resolve(mockUsers[userIndex]) };
+                    }
+                    throw new Error('User not found');
+                }
+
+                return { 
+                    ok: true, 
+                    json: () => Promise.resolve([...mockUsers])
+                };
+            }
+
+            throw new Error('Endpoint not found');
+        };
+
+        // Simplified Revali implementation for demo
+        class SimpleRevali {
+            constructor() {
+                this.cache = new Map();
+                this.subscribers = new Map();
+            }
+
+            async revaliFetch(key, fetcher, options = {}) {
+                const { ttl = 30000, retries = 2, retryDelay = 1000 } = options;
+                
+                // Check cache first
+                if (this.cache.has(key)) {
+                    const entry = this.cache.get(key);
+                    if (Date.now() - entry.timestamp < ttl) {
+                        log(`Cache hit for "${key}"`, 'success');
+                        return entry.data;
+                    }
+                }
+
+                // Fetch with retry logic
+                let attempt = 0;
+                while (attempt <= retries) {
+                    try {
+                        log(`Fetching "${key}" (attempt ${attempt + 1}/${retries + 1})`, 'info');
+                        const data = await fetcher();
+                        
+                        // Cache the result
+                        this.cache.set(key, {
+                            data,
+                            timestamp: Date.now()
+                        });
+
+                        // Notify subscribers
+                        if (this.subscribers.has(key)) {
+                            this.subscribers.get(key).forEach(callback => {
+                                try {
+                                    callback(data, null);
+                                } catch (error) {
+                                    log(`Subscriber error: ${error.message}`, 'error');
+                                }
+                            });
+                        }
+
+                        log(`Successfully fetched "${key}"`, 'success');
+                        return data;
+                    } catch (error) {
+                        attempt++;
+                        if (attempt > retries) {
+                            log(`Failed to fetch "${key}": ${error.message}`, 'error');
+                            
+                            // Notify subscribers about error
+                            if (this.subscribers.has(key)) {
+                                this.subscribers.get(key).forEach(callback => {
+                                    try {
+                                        callback(null, error);
+                                    } catch (err) {
+                                        log(`Subscriber error: ${err.message}`, 'error');
+                                    }
+                                });
+                            }
+                            
+                            throw error;
+                        } else {
+                            log(`Retrying "${key}" in ${retryDelay}ms...`, 'warning');
+                            await new Promise(resolve => setTimeout(resolve, retryDelay));
+                            retryDelay *= 1.5; // Exponential backoff
+                        }
+                    }
+                }
+            }
+
+            subscribe(key, callback) {
+                if (!this.subscribers.has(key)) {
+                    this.subscribers.set(key, new Set());
+                }
+                this.subscribers.get(key).add(callback);
+
+                log(`Subscribed to "${key}"`, 'info');
+
+                return () => {
+                    if (this.subscribers.has(key)) {
+                        this.subscribers.get(key).delete(callback);
+                        if (this.subscribers.get(key).size === 0) {
+                            this.subscribers.delete(key);
+                        }
+                    }
+                    log(`Unsubscribed from "${key}"`, 'info');
+                };
+            }
+
+            mutate(key, updater, shouldRevalidate = true) {
+                if (this.cache.has(key)) {
+                    const entry = this.cache.get(key);
+                    const newData = typeof updater === 'function' ? updater(entry.data) : updater;
+                    
+                    entry.data = newData;
+                    entry.timestamp = Date.now();
+
+                    // Notify subscribers
+                    if (this.subscribers.has(key)) {
+                        this.subscribers.get(key).forEach(callback => {
+                            try {
+                                callback(newData, null);
+                            } catch (error) {
+                                log(`Subscriber error: ${error.message}`, 'error');
+                            }
+                        });
+                    }
+
+                    log(`Mutated "${key}"`, 'success');
+                    return newData;
+                }
+                log(`Cannot mutate "${key}" - not in cache`, 'warning');
+            }
+
+            clearCache(key) {
+                if (key) {
+                    this.cache.delete(key);
+                    log(`Cleared cache for "${key}"`, 'info');
+                } else {
+                    this.cache.clear();
+                    log('Cleared all cache', 'info');
+                }
+            }
+
+            getCacheInfo() {
+                const keys = Array.from(this.cache.keys());
+                const info = {
+                    size: this.cache.size,
+                    keys: keys,
+                    entries: keys.map(key => ({
+                        key,
+                        age: Date.now() - this.cache.get(key).timestamp,
+                        hasData: !!this.cache.get(key).data
+                    }))
+                };
+                return info;
+            }
+
+            triggerRevalidation() {
+                log('Triggering global revalidation...', 'info');
+                // In a real implementation, this would revalidate stale entries
+            }
+
+            cleanup() {
+                this.cache.clear();
+                this.subscribers.clear();
+                log('Cleaned up all cache and subscribers', 'info');
+            }
+        }
+
+        // Initialize Revali instance
+        const revali = new SimpleRevali();
+
+        // Expose to global scope for demo functions
+        window.revaliFetch = revali.revaliFetch.bind(revali);
+        window.subscribe = revali.subscribe.bind(revali);
+        window.mutate = revali.mutate.bind(revali);
+        window.clearCache = revali.clearCache.bind(revali);
+        window.getCacheInfo = revali.getCacheInfo.bind(revali);
+        window.triggerRevalidation = revali.triggerRevalidation.bind(revali);
+        window.cleanup = revali.cleanup.bind(revali);
+
+        // Global variables for demo
+        let usersUnsubscribe = null;
+
+        // Logging function
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('activity-logs');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${timestamp}] ${message}`;
+            logElement.appendChild(entry);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        // Demo Functions
+        window.fetchUsers = async function() {
+            const statusEl = document.getElementById('users-status');
+            const listEl = document.getElementById('users-list');
+            
+            statusEl.style.display = 'block';
+            statusEl.className = 'status loading';
+            statusEl.textContent = 'Loading users...';
+
+            try {
+                const users = await revaliFetch('users', async () => {
+                    const response = await mockFetch('/api/users');
+                    return response.json();
+                });
+
+                statusEl.className = 'status success';
+                statusEl.textContent = `Loaded ${users.length} users`;
+                
+                listEl.innerHTML = users.map(user => 
+                    `<div class="user-item">
+                        <span><strong>${user.name}</strong> - ${user.email}</span>
+                        <small>ID: ${user.id}</small>
+                    </div>`
+                ).join('');
+
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `Error: ${error.message}`;
+                listEl.innerHTML = '<div class="user-item">Failed to load users</div>';
+            }
+        };
+
+        window.fetchUsersCached = async function() {
+            const statusEl = document.getElementById('users-status');
+            const listEl = document.getElementById('users-list');
+            
+            statusEl.style.display = 'block';
+            statusEl.className = 'status loading';
+            statusEl.textContent = 'Loading users (with 30s cache)...';
+
+            try {
+                const users = await revaliFetch('users-cached', async () => {
+                    const response = await mockFetch('/api/users');
+                    return response.json();
+                }, { ttl: 30000 }); // 30 second cache
+
+                statusEl.className = 'status success';
+                statusEl.textContent = `Loaded ${users.length} users (cached for 30s)`;
+                
+                listEl.innerHTML = users.map(user => 
+                    `<div class="user-item">
+                        <span><strong>${user.name}</strong> - ${user.email}</span>
+                        <small>ID: ${user.id}</small>
+                    </div>`
+                ).join('');
+
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `Error: ${error.message}`;
+                listEl.innerHTML = '<div class="user-item">Failed to load users</div>';
+            }
+        };
+
+        window.clearUsersCache = function() {
+            clearCache('users');
+            clearCache('users-cached');
+            document.getElementById('users-status').style.display = 'none';
+            document.getElementById('users-list').innerHTML = '';
+        };
+
+        window.subscribeToUsers = function() {
+            if (usersUnsubscribe) {
+                log('Already subscribed to users', 'warning');
+                return;
+            }
+
+            const statusEl = document.getElementById('subscription-status');
+            const dataEl = document.getElementById('subscription-data');
+
+            statusEl.style.display = 'block';
+            statusEl.className = 'status success';
+            statusEl.textContent = 'Subscribed to users updates';
+
+            usersUnsubscribe = subscribe('users-live', (data, error) => {
+                if (error) {
+                    dataEl.innerHTML = `<div class="status error">Subscription error: ${error.message}</div>`;
+                } else if (data) {
+                    dataEl.innerHTML = `
+                        <div class="status success">Live update received!</div>
+                        <div class="user-list">
+                            ${data.map(user => 
+                                `<div class="user-item">
+                                    <span><strong>${user.name}</strong> - ${user.email}</span>
+                                    <small>ID: ${user.id}</small>
+                                </div>`
+                            ).join('')}
+                        </div>
+                    `;
+                }
+            });
+        };
+
+        window.unsubscribeFromUsers = function() {
+            if (usersUnsubscribe) {
+                usersUnsubscribe();
+                usersUnsubscribe = null;
+                
+                const statusEl = document.getElementById('subscription-status');
+                statusEl.className = 'status';
+                statusEl.textContent = 'Unsubscribed from users updates';
+                
+                document.getElementById('subscription-data').innerHTML = '';
+            }
+        };
+
+        window.simulateDataChange = async function() {
+            try {
+                const users = await revaliFetch('users-live', async () => {
+                    const response = await mockFetch('/api/users');
+                    return response.json();
+                });
+                log('Simulated data change - subscribers notified', 'success');
+            } catch (error) {
+                log(`Failed to simulate data change: ${error.message}`, 'error');
+            }
+        };
+
+        window.addUserOptimistic = async function() {
+            const nameInput = document.getElementById('new-user-name');
+            const statusEl = document.getElementById('optimistic-status');
+            const userName = nameInput.value.trim();
+
+            if (!userName) {
+                statusEl.style.display = 'block';
+                statusEl.className = 'status error';
+                statusEl.textContent = 'Please enter a user name';
+                return;
+            }
+
+            statusEl.style.display = 'block';
+            statusEl.className = 'status loading';
+            statusEl.textContent = 'Adding user optimistically...';
+
+            try {
+                // Optimistic update
+                const tempUser = {
+                    id: 'temp-' + Date.now(),
+                    name: userName,
+                    email: `${userName.toLowerCase().replace(/\s+/g, '.')}@example.com`
+                };
+
+                mutate('users', (prevUsers) => [...(prevUsers || []), tempUser]);
+                log(`Optimistically added user: ${userName}`, 'info');
+
+                // Simulate server request
+                const response = await mockFetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: userName,
+                        email: tempUser.email
+                    })
+                });
+
+                const newUser = await response.json();
+                
+                // Replace temporary user with real one
+                mutate('users', (prevUsers) => 
+                    prevUsers.map(u => u.id === tempUser.id ? newUser : u)
+                );
+
+                statusEl.className = 'status success';
+                statusEl.textContent = `Successfully added user: ${userName}`;
+                nameInput.value = '';
+                log(`Server confirmed user creation: ${userName} (ID: ${newUser.id})`, 'success');
+
+            } catch (error) {
+                // Rollback optimistic update
+                mutate('users', (prevUsers) => 
+                    prevUsers.filter(u => u.id !== tempUser.id)
+                );
+
+                statusEl.className = 'status error';
+                statusEl.textContent = `Failed to add user: ${error.message}`;
+                log(`Rolled back optimistic update for: ${userName}`, 'warning');
+            }
+        };
+
+        window.updateUserOptimistic = async function() {
+            const userIdInput = document.getElementById('user-id-update');
+            const emailInput = document.getElementById('new-user-email');
+            const statusEl = document.getElementById('optimistic-status');
+
+            const userId = parseInt(userIdInput.value);
+            const newEmail = emailInput.value.trim();
+
+            if (!userId || !newEmail) {
+                statusEl.style.display = 'block';
+                statusEl.className = 'status error';
+                statusEl.textContent = 'Please enter both user ID and new email';
+                return;
+            }
+
+            statusEl.style.display = 'block';
+            statusEl.className = 'status loading';
+            statusEl.textContent = 'Updating user email optimistically...';
+
+            let originalUser = null;
+
+            try {
+                // Optimistic update
+                mutate('users', (prevUsers) => {
+                    return prevUsers.map(user => {
+                        if (user.id === userId) {
+                            originalUser = { ...user };
+                            return { ...user, email: newEmail };
+                        }
+                        return user;
+                    });
+                });
+
+                if (!originalUser) {
+                    throw new Error(`User with ID ${userId} not found`);
+                }
+
+                log(`Optimistically updated user ${userId} email to: ${newEmail}`, 'info');
+
+                // Simulate server request
+                const response = await mockFetch(`/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: newEmail })
+                });
+
+                await response.json();
+
+                statusEl.className = 'status success';
+                statusEl.textContent = `Successfully updated user ${userId} email`;
+                userIdInput.value = '';
+                emailInput.value = '';
+                log(`Server confirmed email update for user ${userId}`, 'success');
+
+            } catch (error) {
+                // Rollback optimistic update
+                if (originalUser) {
+                    mutate('users', (prevUsers) => 
+                        prevUsers.map(user => user.id === userId ? originalUser : user)
+                    );
+                    log(`Rolled back optimistic update for user ${userId}`, 'warning');
+                }
+
+                statusEl.className = 'status error';
+                statusEl.textContent = `Failed to update user: ${error.message}`;
+            }
+        };
+
+        window.fetchWithError = async function() {
+            const statusEl = document.getElementById('error-status');
+            statusEl.style.display = 'block';
+            statusEl.className = 'status loading';
+            statusEl.textContent = 'Triggering error that will retry...';
+
+            shouldFailRequest = true;
+
+            try {
+                await revaliFetch('error-test', async () => {
+                    const response = await mockFetch('/api/users');
+                    return response.json();
+                }, { retries: 3, retryDelay: 500 });
+
+                statusEl.className = 'status success';
+                statusEl.textContent = 'Request succeeded after retry!';
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `Request failed after retries: ${error.message}`;
+            }
+        };
+
+        window.fetchWithFatalError = async function() {
+            const statusEl = document.getElementById('error-status');
+            statusEl.style.display = 'block';
+            statusEl.className = 'status loading';
+            statusEl.textContent = 'Triggering fatal error (no retry)...';
+
+            shouldFatalError = true;
+
+            try {
+                await revaliFetch('fatal-error-test', async () => {
+                    const response = await mockFetch('/api/users');
+                    return response.json();
+                }, { retries: 3 });
+
+                statusEl.className = 'status success';
+                statusEl.textContent = 'Request succeeded (unexpected)';
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `Fatal error (no retry): ${error.message}`;
+            }
+        };
+
+        window.showCacheInfo = function() {
+            const cacheInfo = getCacheInfo();
+            const infoEl = document.getElementById('cache-info');
+            
+            infoEl.textContent = JSON.stringify({
+                totalEntries: cacheInfo.size,
+                keys: cacheInfo.keys,
+                details: cacheInfo.entries.map(entry => ({
+                    key: entry.key,
+                    ageInSeconds: Math.round(entry.age / 1000),
+                    hasData: entry.hasData
+                }))
+            }, null, 2);
+        };
+
+        window.clearAllCache = function() {
+            clearCache();
+            document.getElementById('cache-info').textContent = 'All cache cleared';
+        };
+
+        window.triggerGlobalRevalidation = function() {
+            triggerRevalidation();
+        };
+
+        window.clearLogs = function() {
+            document.getElementById('activity-logs').innerHTML = '';
+        };
+
+        // Initialize demo
+        log('Revali Demo initialized', 'success');
+        log('Try the different features to see how Revali works!', 'info');
+    </script>
+</body>
+</html>

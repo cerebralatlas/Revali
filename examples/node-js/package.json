@@ -1,0 +1,29 @@
+{
+  "name": "revali-node-js-examples",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node.js server-side examples for Revali - Framework-agnostic SWR data fetching library",
+  "main": "basic-example.js",
+  "type": "module",
+  "scripts": {
+    "start": "node basic-example.js",
+    "example": "node basic-example.js",
+    "dev": "node --watch basic-example.js"
+  },
+  "keywords": [
+    "revali",
+    "swr",
+    "cache",
+    "node-js",
+    "server-side",
+    "examples",
+    "data-fetching"
+  ],
+  "dependencies": {
+    "revali": "^0.1.0",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

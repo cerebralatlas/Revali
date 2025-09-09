@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Revali Example</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 1rem;
+            line-height: 1.6;
+        }
+        
+        .user-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            background: #f9f9f9;
+        }
+        
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0.25rem;
+        }
+        
+        button:hover {
+            background: #005c99;
+        }
+        
+        .status {
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+        }
+        
+        .loading { background: #e3f2fd; color: #1565c0; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+    </style>
+</head>
+<body>
+    <h1>Simple Revali Example</h1>
+    <p>This example shows how to use Revali in a real project with npm.</p>
+
+    <div>
+        <button onclick="loadUsers()">Load Users</button>
+        <button onclick="loadUsersCached()">Load Users (Cached)</button>
+        <button onclick="addUser()">Add New User</button>
+        <button onclick="clearCache()">Clear Cache</button>
+    </div>
+
+    <div id="status"></div>
+    <div id="users"></div>
+
+    <!-- In a real project, you would import from CDN or use a bundler -->
+    <!-- <script type="module" src="https://unpkg.com/revali@latest/dist/index.js"></script> -->
+    
+    <script type="module">
+        // In a real project, import from 'revali'
+        // import { revaliFetch, subscribe, mutate, clearCache as clear } from 'revali';
+        
+        // For this example, we'll use a CDN link when the package is published
+        // For now, we simulate the API
+
+        // Mock implementation for demonstration
+        const mockApi = {
+            users: [
+                { id: 1, name: 'Alice Johnson', email: 'alice@example.com' },
+                { id: 2, name: 'Bob Smith', email: 'bob@example.com' },
+                { id: 3, name: 'Charlie Brown', email: 'charlie@example.com' }
+            ],
+            nextId: 4
+        };
+
+        // Simulated Revali functions (replace with real imports when using npm)
+        const cache = new Map();
+        const subscribers = new Map();
+
+        async function revaliFetch(key, fetcher, options = {}) {
+            const { ttl = 300000 } = options; // 5 minutes default
+            
+            if (cache.has(key)) {
+                const entry = cache.get(key);
+                if (Date.now() - entry.timestamp < ttl) {
+                    console.log(`🎯 Cache hit for: ${key}`);
+                    return entry.data;
+                }
+            }
+            
+            console.log(`🌐 Fetching: ${key}`);
+            const data = await fetcher();
+            cache.set(key, { data, timestamp: Date.now() });
+            
+            // Notify subscribers
+            if (subscribers.has(key)) {
+                subscribers.get(key).forEach(callback => callback(data));
+            }
+            
+            return data;
+        }
+
+        function subscribe(key, callback) {
+            if (!subscribers.has(key)) {
+                subscribers.set(key, new Set());
+            }
+            subscribers.get(key).add(callback);
+            
+            return () => subscribers.get(key)?.delete(callback);
+        }
+
+        function mutate(key, updater) {
+            if (cache.has(key)) {
+                const entry = cache.get(key);
+                const newData = typeof updater === 'function' ? updater(entry.data) : updater;
+                entry.data = newData;
+                
+                if (subscribers.has(key)) {
+                    subscribers.get(key).forEach(callback => callback(newData));
+                }
+                
+                return newData;
+            }
+        }
+
+        function clearCacheKey(key) {
+            cache.delete(key);
+            console.log(`🗑️ Cache cleared for: ${key}`);
+        }
+
+        // Mock API functions
+        async function fetchUsers() {
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 800));
+            return [...mockApi.users];
+        }
+
+        async function createUser(userData) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const newUser = { id: mockApi.nextId++, ...userData };
+            mockApi.users.push(newUser);
+            return newUser;
+        }
+
+        // UI Helper functions
+        function showStatus(message, type = 'loading') {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function renderUsers(users) {
+            const usersEl = document.getElementById('users');
+            if (!users || users.length === 0) {
+                usersEl.innerHTML = '<p>No users found</p>';
+                return;
+            }
+            
+            usersEl.innerHTML = users.map(user => `
+                <div class="user-card">
+                    <h3>${user.name}</h3>
+                    <p>Email: ${user.email}</p>
+                    <small>ID: ${user.id}</small>
+                </div>
+            `).join('');
+        }
+
+        // Main application functions
+        window.loadUsers = async function() {
+            showStatus('Loading users...', 'loading');
+            
+            try {
+                const users = await revaliFetch('users', fetchUsers);
+                renderUsers(users);
+                showStatus(`Loaded ${users.length} users`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        };
+
+        window.loadUsersCached = async function() {
+            showStatus('Loading users (with cache)...', 'loading');
+            
+            try {
+                const users = await revaliFetch('users', fetchUsers, {
+                    ttl: 30000 // Cache for 30 seconds
+                });
+                renderUsers(users);
+                showStatus(`Loaded ${users.length} users (cached for 30s)`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        };
+
+        window.addUser = async function() {
+            const name = prompt('Enter user name:');
+            if (!name) return;
+            
+            const email = prompt('Enter user email:') || `${name.toLowerCase().replace(/\s+/g, '.')}@example.com`;
+            
+            showStatus('Adding user...', 'loading');
+            
+            try {
+                // Optimistic update
+                const tempUser = { id: 'temp', name, email };
+                mutate('users', users => [...users, tempUser]);
+                showStatus('Adding user (optimistic update)...', 'loading');
+                
+                // Server request
+                const newUser = await createUser({ name, email });
+                
+                // Replace temp user with real user
+                mutate('users', users => 
+                    users.map(u => u.id === 'temp' ? newUser : u)
+                );
+                
+                showStatus(`User ${name} added successfully!`, 'success');
+                
+            } catch (error) {
+                // Rollback on error
+                mutate('users', users => users.filter(u => u.id !== 'temp'));
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        };
+
+        window.clearCache = function() {
+            clearCacheKey('users');
+            showStatus('Cache cleared', 'success');
+        };
+
+        // Subscribe to user changes for real-time updates
+        subscribe('users', (users) => {
+            console.log('🔔 Users updated via subscription:', users.length, 'users');
+        });
+
+        // Initial load
+        console.log('📦 Simple Revali Example loaded');
+        console.log('💡 In a real project, install with: npm install revali');
+        console.log('💡 Then import: import { revaliFetch, subscribe, mutate } from "revali"');
+    </script>
+</body>
+</html>
