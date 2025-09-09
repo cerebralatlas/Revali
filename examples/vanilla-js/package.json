@@ -1,0 +1,28 @@
+{
+  "name": "revali-vanilla-js-examples",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vanilla JavaScript examples for Revali - Framework-agnostic SWR data fetching library",
+  "scripts": {
+    "serve": "npx serve . -p 3000",
+    "start": "npm run serve",
+    "demo": "npm run serve"
+  },
+  "keywords": [
+    "revali",
+    "swr",
+    "cache",
+    "vanilla-js",
+    "examples",
+    "data-fetching"
+  ],
+  "dependencies": {
+    "revali": "latest"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
