@@ -6,6 +6,14 @@ export default defineConfig({
     hookTimeout: 10000,
     coverage: {
       reporter: ['text', 'json', 'html'],
+      exclude: [
+        'examples/**/*',
+        'tests/**/*',
+        'node_modules/**/*',
+        'dist/**/*',
+        'coverage/**/*',
+        '**/*.d.ts'
+      ],
     },
   },
 })
