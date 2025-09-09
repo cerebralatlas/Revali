@@ -1,0 +1,85 @@
+{
+  "name": "revali",
+  "version": "0.1.0",
+  "description": "Framework-agnostic stale-while-revalidate (SWR) data fetching library. A minimal yet powerful caching library for JavaScript/TypeScript.",
+  "keywords": [
+    "swr",
+    "cache",
+    "data-fetching",
+    "stale-while-revalidate",
+    "framework-agnostic",
+    "react",
+    "vue",
+    "svelte",
+    "typescript"
+  ],
+  "author": "Cerebral Atlas <cerebralatlas@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/cerebralatlas/revali#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cerebralatlas/revali.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cerebralatlas/revali/issues"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "type": "module",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,json,md}\"",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "pnpm run build && pnpm run type-check && pnpm run test run",
+    "release": "changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.1",
+    "@types/node": "^20.11.17",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@vitest/coverage-v8": "^1.2.2",
+    "@vitest/ui": "^1.2.2",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "jsdom": "^24.0.0",
+    "prettier": "^3.2.5",
+    "tsup": "^8.0.1",
+    "typescript": "^5.9.2",
+    "vitest": "^1.2.2"
+  },
+  "peerDependencies": {
+    "typescript": ">=4.5.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  }
+}
