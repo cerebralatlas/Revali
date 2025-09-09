@@ -2,6 +2,34 @@
   <img src="./docs/revali-logo.svg" alt="Revali Logo" width="80" />
 </p>
 <h1 align="center">Revali</h1>
+
+<p align="center">
+  <a href="https://github.com/cerebralatlas/revali/actions/workflows/ci.yml">
+    <img src="https://github.com/cerebralatlas/revali/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
+  </a>
+  <a href="https://www.npmjs.com/package/revali">
+    <img src="https://img.shields.io/npm/v/revali.svg" alt="NPM Version" />
+  </a>
+  <a href="https://www.npmjs.com/package/revali">
+    <img src="https://img.shields.io/npm/dm/revali.svg" alt="NPM Downloads" />
+  </a>
+  <a href="https://github.com/cerebralatlas/revali/tree/main/tests">
+    <img src="https://img.shields.io/badge/tests-108%20passing-brightgreen.svg" alt="Tests Passing" />
+  </a>
+  <a href="https://github.com/cerebralatlas/revali/search?l=typescript">
+    <img src="https://img.shields.io/badge/TypeScript-100%25-blue.svg" alt="TypeScript" />
+  </a>
+  <a href="https://github.com/cerebralatlas/revali/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" />
+  </a>
+  <a href="https://bundlephobia.com/package/revali">
+    <img src="https://img.shields.io/bundlephobia/minzip/revali" alt="Bundle Size" />
+  </a>
+  <a href="https://github.com/cerebralatlas/revali">
+    <img src="https://img.shields.io/github/stars/cerebralatlas/revali?style=social" alt="GitHub Stars" />
+  </a>
+</p>
+
 <p align="center">
   <strong>Framework-agnostic stale-while-revalidate (SWR) data fetching library</strong><br>
   A powerful yet lightweight caching library for JavaScript/TypeScript. Works seamlessly with <strong>React, Vue, Svelte</strong>, or vanilla JS projects.
