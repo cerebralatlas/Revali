@@ -56,7 +56,8 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "prepublishOnly": "pnpm run build && pnpm run type-check && pnpm run test run",
-    "release": "changeset publish"
+    "release": "changeset publish",
+    "version-packages": "changeset version"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",
