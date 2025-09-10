@@ -6,10 +6,10 @@ import type { Fetcher, RevaliOptions, CacheEntry } from './types.js';
 import { DEFAULT_OPTIONS, CancellationError } from './types.js';
 import { getCacheEntry, setCacheEntry, ensureCacheSize, isExpired } from './cache.js';
 import { notify } from './subscription.js';
-import { 
-  cancellationManager, 
-  isCancellationError, 
-  createCancellationError 
+import {
+  cancellationManager,
+  isCancellationError,
+  createCancellationError,
 } from './cancellation.js';
 
 // ---------- in-flight requests ----------
@@ -23,14 +23,14 @@ export async function fetchWithDedup<T>(
   options: RevaliOptions,
 ): Promise<T> {
   const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
-  
+
   // Handle cancellation on revalidate
   if (mergedOptions.abortOnRevalidate && inflightRequests.has(key)) {
     cancellationManager.cancel(key);
     // Remove from inflight requests to allow new request
     inflightRequests.delete(key);
   }
-  
+
   // if there is an in-flight request, return the Promise
   if (inflightRequests.has(key)) {
     return inflightRequests.get(key)!;
@@ -40,7 +40,7 @@ export async function fetchWithDedup<T>(
 
   // Create AbortController for this request
   const controller = cancellationManager.create(key);
-  
+
   // Combine signals: controller + timeout + external signal
   const signals: AbortSignal[] = [controller.signal];
   if (abortTimeout && abortTimeout > 0) {
@@ -49,7 +49,7 @@ export async function fetchWithDedup<T>(
   if (signal) {
     signals.push(signal);
   }
-  
+
   const combinedSignal = cancellationManager.combineSignals(...signals);
 
   const promise = (async (): Promise<T> => {
@@ -67,7 +67,7 @@ export async function fetchWithDedup<T>(
         return result;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
-        
+
         // Handle cancellation errors - don't retry
         if (isCancellationError(error)) {
           throw createCancellationError(key, error);
@@ -82,22 +82,22 @@ export async function fetchWithDedup<T>(
         attempt++;
         // exponential backoff strategy
         const delay = retryDelay * Math.pow(2, attempt - 1);
-        
+
         // Use abortable delay
         await new Promise<void>((resolve, reject) => {
           const timeoutId = setTimeout(resolve, delay);
-          
+
           const abortHandler = () => {
             clearTimeout(timeoutId);
             reject(createCancellationError(key));
           };
-          
+
           if (combinedSignal.aborted) {
             clearTimeout(timeoutId);
             reject(createCancellationError(key));
             return;
           }
-          
+
           combinedSignal.addEventListener('abort', abortHandler, { once: true });
         });
       }
@@ -150,7 +150,7 @@ export async function fetchWithDedup<T>(
 
       notify(key, err);
     }
-    
+
     throw err;
   } finally {
     inflightRequests.delete(key);

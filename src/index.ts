@@ -22,18 +22,14 @@ export { initAutoRevalidation, triggerRevalidation } from './core/revalidation.j
 export { getPollingInfo, hasActivePolling, cleanupPolling } from './core/polling.js';
 
 // ---------- Cancellation Exports ----------
-export { 
-  cancel, 
-  cancelAll, 
-  isCancelled, 
-  getCancellationInfo, 
-  isCancellationError 
+export {
+  cancel,
+  cancelAll,
+  isCancelled,
+  getCancellationInfo,
+  isCancellationError,
 } from './core/cancellation.js';
-export { 
-  cancelRequest, 
-  cancelAllRequests, 
-  isRequestCancelled 
-} from './core/fetcher.js';
+export { cancelRequest, cancelAllRequests, isRequestCancelled } from './core/fetcher.js';
 
 // ---------- Auto-initialization ----------
 import { initAutoRevalidation } from './core/revalidation.js';

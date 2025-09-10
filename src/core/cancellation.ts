@@ -193,5 +193,7 @@ export function isCancellationError(error: unknown): error is CancellationError 
  * Create a cancellation error from an abort error
  */
 export function createCancellationError(key: string, originalError?: Error): CancellationError {
-  return new CancellationError(`Request for "${key}" was cancelled${originalError ? `: ${originalError.message}` : ''}`);
+  return new CancellationError(
+    `Request for "${key}" was cancelled${originalError ? `: ${originalError.message}` : ''}`,
+  );
 }
