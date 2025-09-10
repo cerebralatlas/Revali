@@ -60,7 +60,7 @@ export function startPolling(key: string, options: RevaliOptions): void {
 
     if (entry && entry.fetcher) {
       task.lastPolledTime = now;
-      
+
       // Trigger background revalidation
       fetchWithDedup(key, entry.fetcher, entry.options).catch(() => {
         // Silently handle polling errors
@@ -162,9 +162,9 @@ export function hasActivePolling(key: string): boolean {
  */
 function handleVisibilityChange(): void {
   if (typeof document === 'undefined') return;
-  
+
   isPageHidden = document.hidden;
-  
+
   if (!isPageHidden) {
     // Page became visible, resume polling for eligible tasks
     resumeAllPolling();
@@ -176,7 +176,7 @@ function handleVisibilityChange(): void {
  */
 function handleOnlineStatusChange(): void {
   isOffline = !navigator.onLine;
-  
+
   if (!isOffline) {
     // Network came back online, resume polling for eligible tasks
     resumeAllPolling();
@@ -193,7 +193,7 @@ export function initPollingListeners(): void {
   if (typeof document !== 'undefined' && document.addEventListener) {
     document.addEventListener('visibilitychange', handleVisibilityChange);
   }
-  
+
   // Listen for network status changes
   window.addEventListener('online', handleOnlineStatusChange);
   window.addEventListener('offline', handleOnlineStatusChange);

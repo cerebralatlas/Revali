@@ -16,7 +16,7 @@ export function getCacheEntry<T>(key: string): CacheEntry<T> | undefined {
 
 export function setCacheEntry<T>(key: string, entry: CacheEntry<T>): void {
   cache.set(key, entry);
-  
+
   // Start polling if refreshInterval is configured
   if (entry.options.refreshInterval && entry.options.refreshInterval > 0) {
     startPolling(key, entry.options);
