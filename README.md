@@ -46,6 +46,7 @@
 - ️ **Advanced error handling** with exponential backoff retry strategy
 - ️ **Optimistic updates**: Manual cache mutation with optional revalidation
 - **Auto revalidation** on window focus and network reconnection (configurable)
+- **Polling / interval revalidation**: Automatic data refresh at specified intervals
 - **Memory management**: Automatic cleanup and cache size limits
 - **Cache introspection**: Built-in cache management and debugging APIs
 - ️ **TypeScript-first**: Full type safety with zero `any` types
@@ -81,6 +82,7 @@ const userData = await revaliFetch(
     ttl: 5 * 60 * 1000, // 5 minutes cache
     retries: 3, // Retry failed requests 3 times
     revalidateOnFocus: true, // Refresh when window regains focus
+    refreshInterval: 30 * 1000, // Poll every 30 seconds
   },
 );
 
@@ -378,6 +380,41 @@ import { initAutoRevalidation } from 'revali';
 initAutoRevalidation();
 ```
 
+#### `getPollingInfo(): { activeCount: number; keys: string[] }`
+
+Get information about active polling tasks.
+
+```typescript
+import { getPollingInfo } from 'revali';
+
+const pollingInfo = getPollingInfo();
+console.log(`Active polling tasks: ${pollingInfo.activeCount}`);
+console.log('Polling keys:', pollingInfo.keys);
+```
+
+#### `hasActivePolling(key: string): boolean`
+
+Check if a specific key has active polling.
+
+```typescript
+import { hasActivePolling } from 'revali';
+
+if (hasActivePolling('user/1')) {
+  console.log('User data is being polled');
+}
+```
+
+#### `cleanupPolling(): void`
+
+Clean up all active polling tasks. Useful for cleanup when your application is shutting down.
+
+```typescript
+import { cleanupPolling } from 'revali';
+
+// Stop all polling tasks
+cleanupPolling();
+```
+
 ### TypeScript Types
 
 ```typescript
@@ -391,6 +428,10 @@ export interface RevaliOptions {
   maxCacheSize?: number; // Max cache entries (default: 100)
   revalidateOnFocus?: boolean; // Revalidate on focus (default: true)
   revalidateOnReconnect?: boolean; // Revalidate on reconnect (default: true)
+  refreshInterval?: number; // Polling interval in ms, 0 means no polling (default: 0)
+  refreshWhenHidden?: boolean; // Continue polling when page is hidden (default: false)
+  refreshWhenOffline?: boolean; // Continue polling when offline (default: false)
+  dedupingInterval?: number; // Deduping interval in ms (default: 2000)
 }
 
 export interface CacheEntry<T> {
@@ -444,9 +485,12 @@ export const DEFAULT_OPTIONS: Required<RevaliOptions>;
 - ✅ Full TypeScript support
 - ✅ Cache introspection APIs
 
+### Completed (v0.3.0)
+
+- ✅ Polling / interval revalidation
+
 ### In Progress (v0.3.0)
 
-- [ ] Polling / interval revalidation
 - [ ] Request cancellation (AbortController)
 - [ ] Middleware system
 - [ ] Built-in React/Vue/Svelte hooks
@@ -492,6 +536,51 @@ triggerRevalidation();
 // Access default configuration
 console.log('Default TTL:', DEFAULT_OPTIONS.ttl);
 ```
+
+### Polling / Interval Revalidation
+
+Configure automatic data refresh at specified intervals:
+
+```typescript
+import { revaliFetch, getPollingInfo, hasActivePolling } from 'revali';
+
+// Basic polling - refresh every 30 seconds
+const liveStats = await revaliFetch(
+  'live-stats',
+  () => fetch('/api/stats').then(r => r.json()),
+  {
+    refreshInterval: 30 * 1000, // 30 seconds
+    ttl: 5 * 60 * 1000, // 5 minutes cache
+  }
+);
+
+// Advanced polling configuration
+const criticalData = await revaliFetch(
+  'critical-data',
+  fetchCriticalData,
+  {
+    refreshInterval: 5 * 1000,   // Poll every 5 seconds
+    refreshWhenHidden: true,     // Continue when tab is not active
+    refreshWhenOffline: false,   // Pause when offline
+    dedupingInterval: 2000,      // Prevent requests closer than 2s
+    ttl: 10 * 1000,             // Short cache TTL for fresh data
+  }
+);
+
+// Check polling status
+console.log('Polling info:', getPollingInfo());
+console.log('Is polling active:', hasActivePolling('live-stats'));
+
+// Polling automatically stops when cache is cleared
+clearCache('live-stats'); // Stops polling for this key
+```
+
+#### Polling Best Practices
+
+1. **Choose appropriate intervals**: Balance freshness needs with server load
+2. **Use `refreshWhenHidden: false`** for non-critical data to save resources
+3. **Configure `dedupingInterval`** to prevent excessive requests
+4. **Monitor polling with `getPollingInfo()`** for debugging
 
 ### Tree-Shaking Support
 

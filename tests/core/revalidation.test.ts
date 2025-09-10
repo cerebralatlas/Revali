@@ -49,9 +49,11 @@ describe('Revalidation Module', () => {
     it('should set up event listeners for visibility and online events', () => {
       initAutoRevalidation();
 
-      expect(mockWindow.addEventListener).toHaveBeenCalledTimes(2);
+      // Now includes polling listeners as well (2 original + 2 polling = 4 total)
+      expect(mockWindow.addEventListener).toHaveBeenCalledTimes(4);
       expect(mockWindow.addEventListener).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
       expect(mockWindow.addEventListener).toHaveBeenCalledWith('online', expect.any(Function));
+      expect(mockWindow.addEventListener).toHaveBeenCalledWith('offline', expect.any(Function));
     });
 
     it('should handle environment without window object', () => {

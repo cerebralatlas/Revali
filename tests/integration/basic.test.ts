@@ -2,13 +2,16 @@
 // Integration Tests: Basic Functionality
 // -----------------------------
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   revaliFetch,
   subscribe,
   mutate,
   clearCache,
   getCacheInfo,
+  getPollingInfo,
+  hasActivePolling,
+  cleanupPolling,
   type Subscriber,
 } from '../../src/index.js';
 import { createSpy, sleep } from '../utils/test-helpers.js';
@@ -345,6 +348,113 @@ describe('Integration Tests', () => {
       const thirdCallData = thirdCallArgs[0] as unknown as { items: any[]; total: number };
       expect(thirdCallData.items.length).toBe(2);
       expect(thirdCallData.total).toBe(49.98);
+
+      unsubscribe();
+    });
+  });
+
+  describe('Polling Integration', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+      cleanupPolling();
+    });
+
+    it('should start polling when refreshInterval is configured', async () => {
+      const key = 'polling-test';
+      const testData = 'polling-data';
+      const fetcher = vi.fn(async () => testData);
+
+      // Fetch with polling configuration
+      await revaliFetch(key, fetcher, {
+        refreshInterval: 5000,
+        ttl: 60000,
+      });
+
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      expect(hasActivePolling(key)).toBe(true);
+      
+      const pollingInfo = getPollingInfo();
+      expect(pollingInfo.activeCount).toBe(1);
+      expect(pollingInfo.keys).toContain(key);
+    });
+
+    it('should stop polling when cache is cleared', async () => {
+      const key = 'polling-clear-test';
+      const testData = 'polling-data';
+      const fetcher = vi.fn(async () => testData);
+
+      // Start polling
+      await revaliFetch(key, fetcher, {
+        refreshInterval: 3000,
+      });
+
+      expect(hasActivePolling(key)).toBe(true);
+
+      // Clear specific cache entry
+      clearCache(key);
+
+      expect(hasActivePolling(key)).toBe(false);
+    });
+
+    it('should cleanup all polling when clearing all cache', async () => {
+      const key1 = 'polling-test-1';
+      const key2 = 'polling-test-2';
+      const fetcher = vi.fn(async () => 'data');
+
+      // Start multiple polling
+      await revaliFetch(key1, fetcher, { refreshInterval: 2000 });
+      await revaliFetch(key2, fetcher, { refreshInterval: 3000 });
+
+      expect(getPollingInfo().activeCount).toBe(2);
+
+      // Clear all cache
+      clearCache();
+
+      expect(getPollingInfo().activeCount).toBe(0);
+    });
+
+    it('should not start polling when refreshInterval is 0', async () => {
+      const key = 'no-polling-test';
+      const testData = 'no-polling-data';
+      const fetcher = vi.fn(async () => testData);
+
+      await revaliFetch(key, fetcher, {
+        refreshInterval: 0, // No polling
+        ttl: 60000,
+      });
+
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      expect(hasActivePolling(key)).toBe(false);
+      expect(getPollingInfo().activeCount).toBe(0);
+    });
+
+    it('should integrate polling with subscription system', async () => {
+      const key = 'polling-subscription-test';
+      let callCount = 0;
+      const fetcher = vi.fn(async () => {
+        callCount++;
+        return `data-${callCount}`;
+      });
+
+      const subscriber = createSpy<Subscriber<string>>();
+
+      // Start with polling
+      const result = await revaliFetch(key, fetcher, {
+        refreshInterval: 1000,
+        ttl: 60000,
+      });
+
+      expect(result).toBe('data-1');
+
+      // Subscribe to updates
+      const unsubscribe = subscribe(key, subscriber);
+
+      expect(hasActivePolling(key)).toBe(true);
+      expect(fetcher).toHaveBeenCalledTimes(1);
 
       unsubscribe();
     });

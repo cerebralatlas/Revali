@@ -3,6 +3,7 @@
 // -----------------------------
 
 import type { CacheEntry } from './types.js';
+import { startPolling, stopPolling, cleanupPolling } from './polling.js';
 
 // ---------- global cache state ----------
 const cache = new Map<string, CacheEntry<any>>();
@@ -15,9 +16,16 @@ export function getCacheEntry<T>(key: string): CacheEntry<T> | undefined {
 
 export function setCacheEntry<T>(key: string, entry: CacheEntry<T>): void {
   cache.set(key, entry);
+  
+  // Start polling if refreshInterval is configured
+  if (entry.options.refreshInterval && entry.options.refreshInterval > 0) {
+    startPolling(key, entry.options);
+  }
 }
 
 export function deleteCacheEntry(key: string): boolean {
+  // Stop polling for this key
+  stopPolling(key);
   return cache.delete(key);
 }
 
@@ -48,6 +56,8 @@ export function evictOldestEntry(): void {
   }
 
   if (oldestKey) {
+    // Stop polling for the evicted entry
+    stopPolling(oldestKey);
     cache.delete(oldestKey);
   }
 }
@@ -62,8 +72,12 @@ export function ensureCacheSize(maxSize: number): void {
 
 export function clearCache(key?: string): void {
   if (key) {
+    // Stop polling for specific key
+    stopPolling(key);
     cache.delete(key);
   } else {
+    // Stop all polling when clearing all cache
+    cleanupPolling();
     cache.clear();
   }
 }

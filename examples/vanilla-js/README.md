@@ -28,6 +28,20 @@ A minimal example showing common Revali usage patterns:
 - Optimistic updates
 - Simple error handling
 
+### `polling-demo.html`
+
+**🔄 Polling & Interval Revalidation Demo**
+
+Interactive demonstration of the new polling features:
+
+- ⏱️ Configurable polling intervals (2s, 5s, 10s, 30s)
+- 📊 Real-time metrics and activity monitoring
+- 🎛️ Interactive controls for polling configuration
+- 📈 Multiple data sources with different intervals
+- 🔍 Cache hit/miss tracking
+- 📱 Page visibility awareness
+- 📝 Comprehensive activity logging
+
 ## How to Run
 
 ### Option 1: Direct Browser Access
@@ -36,6 +50,7 @@ A minimal example showing common Revali usage patterns:
 # Open files directly in your browser
 open demo.html
 open simple.html
+open polling-demo.html
 ```
 
 ### Option 2: Local Server (Recommended)
@@ -102,6 +117,9 @@ const data = await revaliFetch(
 - **Real-time Updates**: Subscription-based data synchronization
 - **Cache Management**: Manual cache control and introspection
 - **Memory Management**: Automatic cleanup and size limits
+- **🔄 Polling/Interval Revalidation**: Automatic data refresh at specified intervals
+- **📊 Performance Metrics**: Real-time monitoring of cache hits, API calls, and polling activity
+- **🎛️ Interactive Configuration**: Dynamic polling interval and cache TTL adjustment
 
 ## Browser Compatibility
 

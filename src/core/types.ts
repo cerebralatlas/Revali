@@ -12,6 +12,10 @@ export interface RevaliOptions {
   maxCacheSize?: number; // max cache entries count
   revalidateOnFocus?: boolean; // revalidate on focus
   revalidateOnReconnect?: boolean; // revalidate on reconnect
+  refreshInterval?: number; // polling interval in ms, 0 means no polling
+  refreshWhenHidden?: boolean; // continue polling when page is hidden
+  refreshWhenOffline?: boolean; // continue polling when offline
+  dedupingInterval?: number; // deduping interval in ms to avoid too frequent requests
 }
 
 export interface CacheEntry<T> {
@@ -37,4 +41,8 @@ export const DEFAULT_OPTIONS: Required<RevaliOptions> = {
   maxCacheSize: 100,
   revalidateOnFocus: true,
   revalidateOnReconnect: true,
+  refreshInterval: 0, // no polling by default
+  refreshWhenHidden: false, // pause polling when page is hidden
+  refreshWhenOffline: false, // pause polling when offline
+  dedupingInterval: 2000, // 2 seconds deduping interval
 };

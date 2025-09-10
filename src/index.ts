@@ -18,6 +18,13 @@ export { cleanup } from './core/cleanup.js';
 // ---------- Utility Exports ----------
 export { initAutoRevalidation, triggerRevalidation } from './core/revalidation.js';
 
+// ---------- Polling Exports ----------
+export { 
+  getPollingInfo, 
+  hasActivePolling,
+  cleanupPolling 
+} from './core/polling.js';
+
 // ---------- Auto-initialization ----------
 import { initAutoRevalidation } from './core/revalidation.js';
 

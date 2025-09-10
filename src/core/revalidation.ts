@@ -4,6 +4,7 @@
 
 import { getAllCacheEntries } from './cache.js';
 import { fetchWithDedup } from './fetcher.js';
+import { initPollingListeners } from './polling.js';
 
 /**
  * revalidate all eligible cache entries
@@ -60,6 +61,9 @@ export function initAutoRevalidation(): void {
       revalidateAll();
     }
   });
+
+  // initialize polling listeners for page visibility and network status
+  initPollingListeners();
 }
 
 /**

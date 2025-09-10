@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revali Polling Demo</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1rem;
+            line-height: 1.6;
+            background: #f8fafc;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+        }
+        
+        .demo-section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .demo-section h3 {
+            margin-top: 0;
+            color: #2d3748;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+        
+        .data-display {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-indicator.polling {
+            background: #48bb78;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.stopped {
+            background: #a0aec0;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 0.25rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background: #3182ce;
+            transform: translateY(-1px);
+        }
+        
+        button:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .metric-card {
+            background: #edf2f7;
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .metric-label {
+            font-size: 0.875rem;
+            color: #718096;
+            margin-top: 0.25rem;
+        }
+        
+        .log {
+            background: #1a202c;
+            color: #e2e8f0;
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            height: 200px;
+            overflow-y: auto;
+            margin: 1rem 0;
+        }
+        
+        .log-entry {
+            margin: 0.25rem 0;
+            padding: 0.25rem;
+            border-left: 3px solid transparent;
+        }
+        
+        .log-entry.api { border-left-color: #48bb78; }
+        .log-entry.cache { border-left-color: #4299e1; }
+        .log-entry.poll { border-left-color: #ed8936; }
+        .log-entry.error { border-left-color: #f56565; }
+        
+        .config-panel {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .config-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+        }
+        
+        .config-row label {
+            font-weight: 500;
+            color: #2d3748;
+        }
+        
+        .config-row input, .config-row select {
+            padding: 0.5rem;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔄 Revali Polling Demo</h1>
+        <p>Interactive demonstration of interval revalidation and polling features</p>
+    </div>
+
+    <!-- Live Data Section -->
+    <div class="demo-section">
+        <h3>📊 Live Data Polling</h3>
+        <p>This section demonstrates automatic data refresh at specified intervals.</p>
+        
+        <div class="config-panel">
+            <div class="config-row">
+                <label>Polling Interval:</label>
+                <select id="pollingInterval">
+                    <option value="0">Disabled</option>
+                    <option value="2000">2 seconds</option>
+                    <option value="5000" selected>5 seconds</option>
+                    <option value="10000">10 seconds</option>
+                    <option value="30000">30 seconds</option>
+                </select>
+            </div>
+            <div class="config-row">
+                <label>Cache TTL:</label>
+                <select id="cacheTTL">
+                    <option value="5000">5 seconds</option>
+                    <option value="15000" selected>15 seconds</option>
+                    <option value="60000">1 minute</option>
+                </select>
+            </div>
+            <div class="config-row">
+                <label>Poll when hidden:</label>
+                <input type="checkbox" id="pollWhenHidden">
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button onclick="startPolling()">🚀 Start Polling</button>
+            <button onclick="stopPolling()">⏹️ Stop Polling</button>
+            <button onclick="manualRefresh()">🔄 Manual Refresh</button>
+            <button onclick="clearData()">🗑️ Clear Cache</button>
+        </div>
+
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-value" id="pollCount">0</div>
+                <div class="metric-label">Polls Executed</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="cacheHits">0</div>
+                <div class="metric-label">Cache Hits</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="apiCalls">0</div>
+                <div class="metric-label">API Calls</div>
+            </div>
+        </div>
+
+        <div class="data-display">
+            <div>
+                <span class="status-indicator stopped" id="statusIndicator"></span>
+                <strong>Status:</strong> <span id="pollingStatus">Stopped</span>
+            </div>
+            <div><strong>Last Updated:</strong> <span id="lastUpdated">Never</span></div>
+            <div><strong>Current Data:</strong></div>
+            <pre id="currentData">No data loaded</pre>
+        </div>
+    </div>
+
+    <!-- Real-time Stock Prices Section -->
+    <div class="demo-section">
+        <h3>📈 Real-time Stock Prices</h3>
+        <p>Multiple data sources with different polling intervals.</p>
+        
+        <div class="button-group">
+            <button onclick="startStockPolling()">📊 Start Stock Polling</button>
+            <button onclick="stopStockPolling()">⏹️ Stop All</button>
+        </div>
+
+        <div id="stockPrices">
+            <!-- Stock data will be populated here -->
+        </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="demo-section">
+        <h3>📝 Activity Log</h3>
+        <button onclick="clearLog()">Clear Log</button>
+        <div class="log" id="activityLog">
+            <div class="log-entry">Ready to start polling...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Mock Revali implementation for demo purposes
+        // In a real project, you would import from 'revali'
+        
+        let cache = new Map();
+        let subscribers = new Map();
+        let pollingTasks = new Map();
+        let metrics = {
+            pollCount: 0,
+            cacheHits: 0,
+            apiCalls: 0
+        };
+
+        // Mock API endpoints
+        const mockAPIs = {
+            liveData: () => ({
+                timestamp: new Date().toISOString(),
+                value: Math.floor(Math.random() * 1000),
+                status: 'active',
+                temperature: (20 + Math.random() * 15).toFixed(1) + '°C',
+                users: Math.floor(Math.random() * 500) + 100
+            }),
+            
+            stockPrice: (symbol) => ({
+                symbol,
+                price: (100 + Math.random() * 200).toFixed(2),
+                change: (Math.random() * 10 - 5).toFixed(2),
+                timestamp: new Date().toISOString()
+            })
+        };
+
+        // Mock Revali functions
+        async function revaliFetch(key, fetcher, options = {}) {
+            const now = Date.now();
+            const cached = cache.get(key);
+            
+            // Check cache validity
+            if (cached && (!options.ttl || now - cached.timestamp < options.ttl)) {
+                metrics.cacheHits++;
+                updateMetrics();
+                log(`🎯 Cache hit for "${key}"`, 'cache');
+                
+                // Start background refresh if needed
+                if (options.refreshInterval > 0 && !pollingTasks.has(key)) {
+                    startPollingTask(key, fetcher, options);
+                }
+                
+                return cached.data;
+            }
+
+            // Fetch fresh data
+            log(`🌐 API call for "${key}"`, 'api');
+            metrics.apiCalls++;
+            updateMetrics();
+            
+            const data = await fetcher();
+            
+            // Cache the result
+            cache.set(key, {
+                data,
+                timestamp: now
+            });
+
+            // Notify subscribers
+            notifySubscribers(key, data);
+
+            // Start polling if configured
+            if (options.refreshInterval > 0) {
+                startPollingTask(key, fetcher, options);
+            }
+
+            return data;
+        }
+
+        function startPollingTask(key, fetcher, options) {
+            if (pollingTasks.has(key)) {
+                clearInterval(pollingTasks.get(key));
+            }
+
+            const intervalId = setInterval(async () => {
+                // Check if should poll when hidden
+                if (document.hidden && !options.refreshWhenHidden) {
+                    return;
+                }
+
+                try {
+                    log(`🔄 Polling "${key}"`, 'poll');
+                    metrics.pollCount++;
+                    updateMetrics();
+                    
+                    const data = await fetcher();
+                    
+                    // Update cache
+                    cache.set(key, {
+                        data,
+                        timestamp: Date.now()
+                    });
+
+                    // Notify subscribers
+                    notifySubscribers(key, data);
+                    
+                } catch (error) {
+                    log(`❌ Polling error for "${key}": ${error.message}`, 'error');
+                }
+            }, options.refreshInterval);
+
+            pollingTasks.set(key, intervalId);
+        }
+
+        function subscribe(key, callback) {
+            if (!subscribers.has(key)) {
+                subscribers.set(key, new Set());
+            }
+            subscribers.get(key).add(callback);
+
+            return () => {
+                const keySubscribers = subscribers.get(key);
+                if (keySubscribers) {
+                    keySubscribers.delete(callback);
+                    if (keySubscribers.size === 0) {
+                        subscribers.delete(key);
+                    }
+                }
+            };
+        }
+
+        function notifySubscribers(key, data, error = null) {
+            const keySubscribers = subscribers.get(key);
+            if (keySubscribers) {
+                keySubscribers.forEach(callback => {
+                    try {
+                        callback(data, error);
+                    } catch (err) {
+                        console.error('Subscriber error:', err);
+                    }
+                });
+            }
+        }
+
+        function hasActivePolling(key) {
+            return pollingTasks.has(key);
+        }
+
+        function stopPollingTask(key) {
+            const intervalId = pollingTasks.get(key);
+            if (intervalId) {
+                clearInterval(intervalId);
+                pollingTasks.delete(key);
+                return true;
+            }
+            return false;
+        }
+
+        function clearCache(key = null) {
+            if (key) {
+                cache.delete(key);
+                stopPollingTask(key);
+            } else {
+                cache.clear();
+                pollingTasks.forEach(id => clearInterval(id));
+                pollingTasks.clear();
+            }
+        }
+
+        function getPollingInfo() {
+            return {
+                activeCount: pollingTasks.size,
+                keys: Array.from(pollingTasks.keys())
+            };
+        }
+
+        // UI Helper functions
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('activityLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${timestamp}] ${message}`;
+            logElement.appendChild(entry);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateMetrics() {
+            document.getElementById('pollCount').textContent = metrics.pollCount;
+            document.getElementById('cacheHits').textContent = metrics.cacheHits;
+            document.getElementById('apiCalls').textContent = metrics.apiCalls;
+        }
+
+        function updatePollingStatus() {
+            const isPolling = hasActivePolling('live-data');
+            const statusElement = document.getElementById('pollingStatus');
+            const indicatorElement = document.getElementById('statusIndicator');
+            
+            if (isPolling) {
+                statusElement.textContent = 'Active';
+                indicatorElement.className = 'status-indicator polling';
+            } else {
+                statusElement.textContent = 'Stopped';
+                indicatorElement.className = 'status-indicator stopped';
+            }
+        }
+
+        // Demo functions
+        window.startPolling = async function() {
+            const interval = parseInt(document.getElementById('pollingInterval').value);
+            const ttl = parseInt(document.getElementById('cacheTTL').value);
+            const refreshWhenHidden = document.getElementById('pollWhenHidden').checked;
+
+            if (interval === 0) {
+                alert('Please select a polling interval greater than 0');
+                return;
+            }
+
+            log(`🚀 Starting polling (interval: ${interval}ms, TTL: ${ttl}ms)`, 'poll');
+
+            // Subscribe to data updates
+            const unsubscribe = subscribe('live-data', (data) => {
+                document.getElementById('currentData').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+                updatePollingStatus();
+            });
+
+            try {
+                const data = await revaliFetch('live-data', mockAPIs.liveData, {
+                    refreshInterval: interval,
+                    ttl: ttl,
+                    refreshWhenHidden: refreshWhenHidden
+                });
+
+                document.getElementById('currentData').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+                updatePollingStatus();
+
+            } catch (error) {
+                log(`❌ Error starting polling: ${error.message}`, 'error');
+            }
+        };
+
+        window.stopPolling = function() {
+            const stopped = stopPollingTask('live-data');
+            if (stopped) {
+                log('⏹️ Polling stopped', 'poll');
+            } else {
+                log('ℹ️ No active polling to stop', 'poll');
+            }
+            updatePollingStatus();
+        };
+
+        window.manualRefresh = async function() {
+            try {
+                log('🔄 Manual refresh triggered', 'api');
+                const data = await mockAPIs.liveData();
+                
+                cache.set('live-data', {
+                    data,
+                    timestamp: Date.now()
+                });
+
+                document.getElementById('currentData').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+                
+                notifySubscribers('live-data', data);
+                
+            } catch (error) {
+                log(`❌ Manual refresh error: ${error.message}`, 'error');
+            }
+        };
+
+        window.clearData = function() {
+            clearCache('live-data');
+            document.getElementById('currentData').textContent = 'No data loaded';
+            document.getElementById('lastUpdated').textContent = 'Never';
+            updatePollingStatus();
+            log('🗑️ Cache cleared', 'cache');
+        };
+
+        window.clearLog = function() {
+            document.getElementById('activityLog').innerHTML = '<div class="log-entry">Log cleared...</div>';
+        };
+
+        // Stock polling demo
+        const stockSymbols = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN'];
+        
+        window.startStockPolling = function() {
+            const stockContainer = document.getElementById('stockPrices');
+            stockContainer.innerHTML = '';
+
+            stockSymbols.forEach((symbol, index) => {
+                const interval = 3000 + (index * 1000); // Different intervals
+                
+                const stockCard = document.createElement('div');
+                stockCard.className = 'data-display';
+                stockCard.innerHTML = `
+                    <div><strong>${symbol}</strong> (${interval}ms interval)</div>
+                    <div>Price: $<span id="price-${symbol}">--</span></div>
+                    <div>Change: $<span id="change-${symbol}">--</span></div>
+                    <div>Updated: <span id="updated-${symbol}">Never</span></div>
+                `;
+                stockContainer.appendChild(stockCard);
+
+                // Subscribe to updates
+                subscribe(`stock-${symbol}`, (data) => {
+                    document.getElementById(`price-${symbol}`).textContent = data.price;
+                    document.getElementById(`change-${symbol}`).textContent = data.change;
+                    document.getElementById(`updated-${symbol}`).textContent = new Date(data.timestamp).toLocaleTimeString();
+                });
+
+                // Start polling
+                revaliFetch(`stock-${symbol}`, () => mockAPIs.stockPrice(symbol), {
+                    refreshInterval: interval,
+                    ttl: 10000,
+                    refreshWhenHidden: false
+                });
+            });
+
+            log('📊 Started polling all stock prices', 'poll');
+        };
+
+        window.stopStockPolling = function() {
+            stockSymbols.forEach(symbol => {
+                stopPollingTask(`stock-${symbol}`);
+            });
+            log('⏹️ Stopped all stock polling', 'poll');
+        };
+
+        // Initialize
+        updateMetrics();
+        updatePollingStatus();
+    </script>
+</body>
+</html>
