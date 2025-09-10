@@ -2,7 +2,7 @@
 // Revali: Core Types
 // -----------------------------
 
-export type Fetcher<T> = () => Promise<T>;
+export type Fetcher<T> = (signal?: AbortSignal) => Promise<T>;
 export type Subscriber<T> = (data: T | undefined, error?: Error) => void;
 
 export interface RevaliOptions {
@@ -16,6 +16,9 @@ export interface RevaliOptions {
   refreshWhenHidden?: boolean; // continue polling when page is hidden
   refreshWhenOffline?: boolean; // continue polling when offline
   dedupingInterval?: number; // deduping interval in ms to avoid too frequent requests
+  abortOnRevalidate?: boolean; // cancel previous request when revalidating
+  abortTimeout?: number; // request timeout in ms, 0 means no timeout
+  signal?: AbortSignal; // external abort signal
 }
 
 export interface CacheEntry<T> {
@@ -24,6 +27,7 @@ export interface CacheEntry<T> {
   error?: Error;
   fetcher: Fetcher<T>;
   options: RevaliOptions;
+  abortController?: AbortController; // current request's abort controller
 }
 
 export interface RevaliState<T> {
@@ -33,8 +37,16 @@ export interface RevaliState<T> {
   isValidating: boolean;
 }
 
+// Cancellation error class
+export class CancellationError extends Error {
+  name = 'CancellationError';
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 // default options
-export const DEFAULT_OPTIONS: Required<RevaliOptions> = {
+export const DEFAULT_OPTIONS: Required<Omit<RevaliOptions, 'signal'>> & { signal?: AbortSignal } = {
   retries: 2,
   retryDelay: 300,
   ttl: 5 * 60 * 1000, // 5 minutes default TTL
@@ -45,4 +57,6 @@ export const DEFAULT_OPTIONS: Required<RevaliOptions> = {
   refreshWhenHidden: false, // pause polling when page is hidden
   refreshWhenOffline: false, // pause polling when offline
   dedupingInterval: 2000, // 2 seconds deduping interval
+  abortOnRevalidate: false, // don't cancel by default for backward compatibility
+  abortTimeout: 0, // no timeout by default
 };

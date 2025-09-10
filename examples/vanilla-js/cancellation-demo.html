@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revali - Request Cancellation Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 24px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 32px;
+        }
+
+        .demo-section {
+            margin-bottom: 32px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .demo-section h2 {
+            color: #444;
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #005c99;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .cancel-btn {
+            background: #dc3545;
+        }
+
+        .cancel-btn:hover:not(:disabled) {
+            background: #c82333;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 8px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.cancelled {
+            background: #e2e3e5;
+            color: #495057;
+            border: 1px solid #d6d8db;
+        }
+
+        .info-panel {
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 16px 0;
+        }
+
+        .info-panel h3 {
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        .info-panel div {
+            font-family: monospace;
+            font-size: 14px;
+            margin: 4px 0;
+        }
+
+        .search-input {
+            width: 200px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Revali Request Cancellation Demo</h1>
+        <p class="subtitle">Interactive demonstration of request cancellation features using AbortController</p>
+
+        <!-- Basic Cancellation Demo -->
+        <div class="demo-section">
+            <h2>🛑 Basic Request Cancellation</h2>
+            <div class="controls">
+                <button id="basic-fetch-btn">Start Request</button>
+                <button id="basic-cancel-btn" class="cancel-btn" disabled>Cancel Request</button>
+            </div>
+            <div id="basic-status"></div>
+        </div>
+
+        <!-- Timeout Demo -->
+        <div class="demo-section">
+            <h2>⏰ Request Timeout</h2>
+            <div class="controls">
+                <button id="timeout-fetch-btn">Start Slow Request (10s)</button>
+                <input type="number" id="timeout-input" placeholder="Timeout (ms)" value="3000" min="1000" max="15000" step="1000">
+                <button id="timeout-cancel-btn" class="cancel-btn" disabled>Cancel Request</button>
+            </div>
+            <div id="timeout-status"></div>
+        </div>
+
+        <!-- Search with Cancel on Revalidate -->
+        <div class="demo-section">
+            <h2>🔍 Search with Auto-Cancel</h2>
+            <div class="controls">
+                <input type="text" id="search-input" class="search-input" placeholder="Type to search...">
+                <button id="search-cancel-btn" class="cancel-btn">Cancel All Searches</button>
+            </div>
+            <div id="search-status"></div>
+            <div id="search-results"></div>
+        </div>
+
+        <!-- Multiple Requests Demo -->
+        <div class="demo-section">
+            <h2>📊 Multiple Requests Management</h2>
+            <div class="controls">
+                <button id="multi-start-btn">Start 5 Requests</button>
+                <button id="multi-cancel-all-btn" class="cancel-btn">Cancel All</button>
+                <button id="multi-cancel-random-btn" class="cancel-btn">Cancel Random</button>
+            </div>
+            <div id="multi-status"></div>
+        </div>
+
+        <!-- Cancellation Info Panel -->
+        <div class="info-panel">
+            <h3>📈 Cancellation Info</h3>
+            <div id="active-count">Active requests: 0</div>
+            <div id="active-keys">Active keys: []</div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="demo-section">
+            <h2>📝 Activity Log</h2>
+            <button id="clear-log-btn">Clear Log</button>
+            <div id="activity-log" class="log"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Mock Revali implementation for demo
+        // In real usage, import from 'revali'
+        
+        class MockRevali {
+            constructor() {
+                this.cache = new Map();
+                this.controllers = new Map();
+                this.subscribers = new Map();
+            }
+
+            async revaliFetch(key, fetcher, options = {}) {
+                const { abortTimeout, signal, abortOnRevalidate } = options;
+                
+                // Cancel existing request if abortOnRevalidate is true
+                if (abortOnRevalidate && this.controllers.has(key)) {
+                    this.cancel(key);
+                }
+
+                // Create abort controller
+                const controller = new AbortController();
+                this.controllers.set(key, controller);
+
+                // Combine signals
+                const signals = [controller.signal];
+                if (signal) signals.push(signal);
+                
+                // Create timeout signal if specified
+                if (abortTimeout) {
+                    const timeoutController = new AbortController();
+                    setTimeout(() => timeoutController.abort(), abortTimeout);
+                    signals.push(timeoutController.signal);
+                }
+
+                const combinedSignal = this.combineSignals(...signals);
+
+                try {
+                    const result = await fetcher(combinedSignal);
+                    this.controllers.delete(key);
+                    return result;
+                } catch (error) {
+                    this.controllers.delete(key);
+                    if (error.name === 'AbortError') {
+                        throw new Error(`Request for "${key}" was cancelled`);
+                    }
+                    throw error;
+                }
+            }
+
+            cancel(key) {
+                const controller = this.controllers.get(key);
+                if (controller && !controller.signal.aborted) {
+                    controller.abort();
+                    this.controllers.delete(key);
+                    return true;
+                }
+                return false;
+            }
+
+            cancelAll() {
+                let count = 0;
+                for (const [key, controller] of this.controllers.entries()) {
+                    if (!controller.signal.aborted) {
+                        controller.abort();
+                        count++;
+                    }
+                }
+                this.controllers.clear();
+                return count;
+            }
+
+            getCancellationInfo() {
+                const activeKeys = [];
+                for (const [key, controller] of this.controllers.entries()) {
+                    if (!controller.signal.aborted) {
+                        activeKeys.push(key);
+                    }
+                }
+                return {
+                    activeCount: activeKeys.length,
+                    keys: activeKeys
+                };
+            }
+
+            combineSignals(...signals) {
+                const controller = new AbortController();
+                const validSignals = signals.filter(s => s);
+
+                for (const signal of validSignals) {
+                    if (signal.aborted) {
+                        controller.abort();
+                        break;
+                    }
+                    signal.addEventListener('abort', () => {
+                        if (!controller.signal.aborted) {
+                            controller.abort();
+                        }
+                    }, { once: true });
+                }
+
+                return controller.signal;
+            }
+        }
+
+        const revali = new MockRevali();
+        
+        // Utility functions
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('activity-log');
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateStatus(elementId, message, type = 'loading') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+
+        function updateInfo() {
+            const info = revali.getCancellationInfo();
+            document.getElementById('active-count').textContent = `Active requests: ${info.activeCount}`;
+            document.getElementById('active-keys').textContent = `Active keys: [${info.keys.join(', ')}]`;
+        }
+
+        // Mock API functions
+        async function mockApiCall(signal, delay = 2000, shouldFail = false) {
+            return new Promise((resolve, reject) => {
+                const timeoutId = setTimeout(() => {
+                    if (shouldFail) {
+                        reject(new Error('API Error'));
+                    } else {
+                        resolve({ data: `Response after ${delay}ms`, timestamp: Date.now() });
+                    }
+                }, delay);
+
+                signal?.addEventListener('abort', () => {
+                    clearTimeout(timeoutId);
+                    reject(new DOMException('Aborted', 'AbortError'));
+                });
+            });
+        }
+
+        async function mockSearchAPI(signal, query, delay = 1000) {
+            return new Promise((resolve, reject) => {
+                const timeoutId = setTimeout(() => {
+                    resolve({
+                        query,
+                        results: [
+                            `${query} result 1`,
+                            `${query} result 2`,
+                            `${query} result 3`
+                        ].filter(r => r.length > 8) // Filter short queries
+                    });
+                }, delay);
+
+                signal?.addEventListener('abort', () => {
+                    clearTimeout(timeoutId);
+                    reject(new DOMException('Aborted', 'AbortError'));
+                });
+            });
+        }
+
+        // Basic cancellation demo
+        document.getElementById('basic-fetch-btn').addEventListener('click', async () => {
+            const fetchBtn = document.getElementById('basic-fetch-btn');
+            const cancelBtn = document.getElementById('basic-cancel-btn');
+            
+            fetchBtn.disabled = true;
+            cancelBtn.disabled = false;
+            
+            updateStatus('basic-status', 'Fetching data...', 'loading');
+            log('Started basic request');
+            
+            try {
+                const result = await revali.revaliFetch('basic-request', (signal) => 
+                    mockApiCall(signal, 5000)
+                );
+                
+                updateStatus('basic-status', `Success: ${JSON.stringify(result)}`, 'success');
+                log('Basic request completed successfully');
+            } catch (error) {
+                if (error.message.includes('cancelled')) {
+                    updateStatus('basic-status', 'Request was cancelled', 'cancelled');
+                    log('Basic request was cancelled');
+                } else {
+                    updateStatus('basic-status', `Error: ${error.message}`, 'error');
+                    log(`Basic request failed: ${error.message}`);
+                }
+            } finally {
+                fetchBtn.disabled = false;
+                cancelBtn.disabled = true;
+                updateInfo();
+            }
+        });
+
+        document.getElementById('basic-cancel-btn').addEventListener('click', () => {
+            const cancelled = revali.cancel('basic-request');
+            log(`Cancel basic request: ${cancelled}`);
+            updateInfo();
+        });
+
+        // Timeout demo
+        document.getElementById('timeout-fetch-btn').addEventListener('click', async () => {
+            const fetchBtn = document.getElementById('timeout-fetch-btn');
+            const cancelBtn = document.getElementById('timeout-cancel-btn');
+            const timeoutInput = document.getElementById('timeout-input');
+            
+            const timeout = parseInt(timeoutInput.value) || 3000;
+            
+            fetchBtn.disabled = true;
+            cancelBtn.disabled = false;
+            
+            updateStatus('timeout-status', `Fetching with ${timeout}ms timeout...`, 'loading');
+            log(`Started timeout request (${timeout}ms timeout)`);
+            
+            try {
+                const result = await revali.revaliFetch('timeout-request', (signal) => 
+                    mockApiCall(signal, 10000), // 10 second request
+                    { abortTimeout: timeout }
+                );
+                
+                updateStatus('timeout-status', `Success: ${JSON.stringify(result)}`, 'success');
+                log('Timeout request completed successfully');
+            } catch (error) {
+                if (error.message.includes('cancelled')) {
+                    updateStatus('timeout-status', `Request timed out after ${timeout}ms`, 'cancelled');
+                    log(`Timeout request cancelled after ${timeout}ms`);
+                } else {
+                    updateStatus('timeout-status', `Error: ${error.message}`, 'error');
+                    log(`Timeout request failed: ${error.message}`);
+                }
+            } finally {
+                fetchBtn.disabled = false;
+                cancelBtn.disabled = true;
+                updateInfo();
+            }
+        });
+
+        document.getElementById('timeout-cancel-btn').addEventListener('click', () => {
+            const cancelled = revali.cancel('timeout-request');
+            log(`Cancel timeout request: ${cancelled}`);
+            updateInfo();
+        });
+
+        // Search demo
+        let searchTimeout;
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                updateStatus('search-status', 'Type at least 2 characters to search', 'loading');
+                document.getElementById('search-results').textContent = '';
+                return;
+            }
+            
+            searchTimeout = setTimeout(async () => {
+                const searchKey = `search-${query}`;
+                
+                updateStatus('search-status', `Searching for "${query}"...`, 'loading');
+                log(`Started search for "${query}"`);
+                
+                try {
+                    const result = await revali.revaliFetch(searchKey, (signal) => 
+                        mockSearchAPI(signal, query, 1500),
+                        { abortOnRevalidate: true }
+                    );
+                    
+                    updateStatus('search-status', `Found ${result.results.length} results`, 'success');
+                    document.getElementById('search-results').textContent = result.results.join('\n');
+                    log(`Search for "${query}" completed: ${result.results.length} results`);
+                } catch (error) {
+                    if (error.message.includes('cancelled')) {
+                        updateStatus('search-status', `Search for "${query}" was cancelled`, 'cancelled');
+                        log(`Search for "${query}" was cancelled`);
+                    } else {
+                        updateStatus('search-status', `Search error: ${error.message}`, 'error');
+                        log(`Search for "${query}" failed: ${error.message}`);
+                    }
+                    document.getElementById('search-results').textContent = '';
+                } finally {
+                    updateInfo();
+                }
+            }, 300); // Debounce
+        });
+
+        document.getElementById('search-cancel-btn').addEventListener('click', () => {
+            const cancelled = revali.cancelAll();
+            log(`Cancelled all searches: ${cancelled} requests`);
+            updateStatus('search-status', 'All searches cancelled', 'cancelled');
+            document.getElementById('search-results').textContent = '';
+            updateInfo();
+        });
+
+        // Multiple requests demo
+        document.getElementById('multi-start-btn').addEventListener('click', async () => {
+            const startBtn = document.getElementById('multi-start-btn');
+            startBtn.disabled = true;
+            
+            updateStatus('multi-status', 'Starting 5 requests...', 'loading');
+            log('Started 5 multiple requests');
+            
+            const promises = [];
+            for (let i = 1; i <= 5; i++) {
+                const promise = revali.revaliFetch(`multi-${i}`, (signal) => 
+                    mockApiCall(signal, 2000 + Math.random() * 3000)
+                ).then(result => {
+                    log(`Multi request ${i} completed`);
+                    return { id: i, ...result };
+                }).catch(error => {
+                    if (error.message.includes('cancelled')) {
+                        log(`Multi request ${i} was cancelled`);
+                    } else {
+                        log(`Multi request ${i} failed: ${error.message}`);
+                    }
+                    throw error;
+                });
+                
+                promises.push(promise);
+            }
+            
+            updateInfo();
+            
+            try {
+                const results = await Promise.allSettled(promises);
+                const successful = results.filter(r => r.status === 'fulfilled').length;
+                const cancelled = results.filter(r => 
+                    r.status === 'rejected' && r.reason.message.includes('cancelled')
+                ).length;
+                
+                updateStatus('multi-status', 
+                    `Completed: ${successful} successful, ${cancelled} cancelled`, 
+                    successful > 0 ? 'success' : 'cancelled'
+                );
+                log(`Multi requests finished: ${successful} successful, ${cancelled} cancelled`);
+            } catch (error) {
+                updateStatus('multi-status', `Error: ${error.message}`, 'error');
+                log(`Multi requests error: ${error.message}`);
+            } finally {
+                startBtn.disabled = false;
+                updateInfo();
+            }
+        });
+
+        document.getElementById('multi-cancel-all-btn').addEventListener('click', () => {
+            const cancelled = revali.cancelAll();
+            log(`Cancelled all multi requests: ${cancelled} requests`);
+            updateInfo();
+        });
+
+        document.getElementById('multi-cancel-random-btn').addEventListener('click', () => {
+            const info = revali.getCancellationInfo();
+            if (info.keys.length === 0) {
+                log('No active requests to cancel');
+                return;
+            }
+            
+            const randomKey = info.keys[Math.floor(Math.random() * info.keys.length)];
+            const cancelled = revali.cancel(randomKey);
+            log(`Cancelled random request "${randomKey}": ${cancelled}`);
+            updateInfo();
+        });
+
+        // Clear log
+        document.getElementById('clear-log-btn').addEventListener('click', () => {
+            document.getElementById('activity-log').textContent = '';
+        });
+
+        // Update info periodically
+        setInterval(updateInfo, 500);
+        
+        // Initial setup
+        log('Revali Cancellation Demo initialized');
+        updateInfo();
+    </script>
+</body>
+</html>

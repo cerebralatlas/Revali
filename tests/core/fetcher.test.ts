@@ -323,4 +323,229 @@ describe('Fetcher Module', () => {
       expect(cacheEntry?.data).toEqual(complexData);
     });
   });
+
+  describe('Request Cancellation', () => {
+    it('should cancel requests using AbortSignal', async () => {
+      const key = 'cancel-test';
+      const controller = new AbortController();
+      
+      const fetcher = vi.fn(async (signal?: AbortSignal) => {
+        return new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => resolve('data'), 100);
+          
+          signal?.addEventListener('abort', () => {
+            clearTimeout(timeoutId);
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        });
+      });
+
+      const promise = fetchWithDedup(key, fetcher, { signal: controller.signal });
+      
+      // Cancel after 10ms
+      setTimeout(() => controller.abort(), 10);
+
+      await expect(promise).rejects.toThrow('Request for "cancel-test" was cancelled');
+      expect(fetcher).toHaveBeenCalledWith(expect.any(AbortSignal));
+    });
+
+    it('should handle timeout cancellation', async () => {
+      const key = 'timeout-test';
+      const fetcher = vi.fn(async (signal?: AbortSignal) => {
+        return new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => resolve('data'), 200);
+          
+          signal?.addEventListener('abort', () => {
+            clearTimeout(timeoutId);
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        });
+      });
+
+      const promise = fetchWithDedup(key, fetcher, { abortTimeout: 50 });
+
+      await expect(promise).rejects.toThrow('Request for "timeout-test" was cancelled');
+    });
+
+    it('should cancel on revalidate when abortOnRevalidate is true', async () => {
+      const key = 'revalidate-cancel-test';
+      let callCount = 0;
+      
+      const fetcher = vi.fn(async (signal?: AbortSignal) => {
+        callCount++;
+        return new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => resolve(`data-${callCount}`), 100);
+          
+          signal?.addEventListener('abort', () => {
+            clearTimeout(timeoutId);
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        });
+      });
+
+      // Start first request
+      const promise1 = fetchWithDedup(key, fetcher, { abortOnRevalidate: true });
+      
+      // Start second request (should cancel first)
+      setTimeout(() => {
+        fetchWithDedup(key, fetcher, { abortOnRevalidate: true }).catch(() => {});
+      }, 10);
+
+      await expect(promise1).rejects.toThrow();
+      expect(callCount).toBe(2);
+    });
+
+    it('should not retry cancelled requests', async () => {
+      const key = 'no-retry-cancel-test';
+      const controller = new AbortController();
+      
+      const fetcher = vi.fn(async (signal?: AbortSignal) => {
+        if (signal?.aborted) {
+          throw new DOMException('Aborted', 'AbortError');
+        }
+        throw new Error('Network error');
+      });
+
+      const promise = fetchWithDedup(key, fetcher, { 
+        signal: controller.signal,
+        retries: 3
+      });
+      
+      controller.abort();
+
+      await expect(promise).rejects.toThrow('Request for "no-retry-cancel-test" was cancelled');
+      expect(fetcher).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not cache cancellation errors', async () => {
+      const key = 'no-cache-cancel-test';
+      const controller = new AbortController();
+      
+      const fetcher = vi.fn(async (signal?: AbortSignal) => {
+        return new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => resolve('data'), 100);
+          
+          signal?.addEventListener('abort', () => {
+            clearTimeout(timeoutId);
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        });
+      });
+
+      controller.abort();
+
+      await expect(fetchWithDedup(key, fetcher, { signal: controller.signal }))
+        .rejects.toThrow();
+
+      const cacheEntry = getCacheEntry(key);
+      expect(cacheEntry).toBeUndefined();
+    });
+
+    it('should combine multiple abort signals', async () => {
+      const key = 'multi-signal-test';
+      const controller1 = new AbortController();
+      const controller2 = new AbortController();
+      
+      const fetcher = vi.fn(async (signal?: AbortSignal) => {
+        return new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => resolve('data'), 100);
+          
+          signal?.addEventListener('abort', () => {
+            clearTimeout(timeoutId);
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        });
+      });
+
+      const promise = fetchWithDedup(key, fetcher, { 
+        signal: controller1.signal,
+        abortTimeout: 200
+      });
+      
+      // Abort external signal
+      setTimeout(() => controller2.abort(), 10);
+
+      // Should not be cancelled yet since controller1 is not aborted
+      setTimeout(() => controller1.abort(), 20);
+
+      await expect(promise).rejects.toThrow();
+    });
+  });
+
+  describe('Cancellation API', () => {
+    it('should cancel specific requests', async () => {
+      const { cancelRequest } = await import('../../src/core/fetcher.js');
+      
+      const key = 'api-cancel-test';
+      const fetcher = vi.fn(async (signal?: AbortSignal) => {
+        return new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => resolve('data'), 100);
+          
+          signal?.addEventListener('abort', () => {
+            clearTimeout(timeoutId);
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        });
+      });
+
+      const promise = fetchWithDedup(key, fetcher, DEFAULT_OPTIONS);
+      
+      setTimeout(() => {
+        const cancelled = cancelRequest(key);
+        expect(cancelled).toBe(true);
+      }, 10);
+
+      await expect(promise).rejects.toThrow();
+    });
+
+    it('should cancel all requests', async () => {
+      const { cancelAllRequests } = await import('../../src/core/fetcher.js');
+      
+      const fetcher = vi.fn(async (signal?: AbortSignal) => {
+        return new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => resolve('data'), 100);
+          
+          signal?.addEventListener('abort', () => {
+            clearTimeout(timeoutId);
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        });
+      });
+
+      const promises = [
+        fetchWithDedup('key1', fetcher, DEFAULT_OPTIONS),
+        fetchWithDedup('key2', fetcher, DEFAULT_OPTIONS),
+        fetchWithDedup('key3', fetcher, DEFAULT_OPTIONS)
+      ];
+      
+      setTimeout(() => {
+        const cancelledCount = cancelAllRequests();
+        expect(cancelledCount).toBe(3);
+      }, 10);
+
+      await Promise.allSettled(promises);
+      
+      for (const promise of promises) {
+        await expect(promise).rejects.toThrow();
+      }
+    });
+
+    it('should check if request is cancelled', async () => {
+      const { isRequestCancelled, cancelRequest } = await import('../../src/core/fetcher.js');
+      
+      const key = 'check-cancel-test';
+      const fetcher = vi.fn(async () => 'data');
+
+      expect(isRequestCancelled(key)).toBe(false);
+
+      const promise = fetchWithDedup(key, fetcher, DEFAULT_OPTIONS);
+      
+      setTimeout(() => {
+        cancelRequest(key);
+        expect(isRequestCancelled(key)).toBe(true);
+      }, 10);
+
+      await promise.catch(() => {});
+    });
+  });
 });

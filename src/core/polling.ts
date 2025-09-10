@@ -5,6 +5,7 @@
 import type { RevaliOptions } from './types.js';
 import { getAllCacheEntries } from './cache.js';
 import { fetchWithDedup } from './fetcher.js';
+import { cancellationManager } from './cancellation.js';
 
 // ---------- polling task interface ----------
 
@@ -87,6 +88,8 @@ export function stopPolling(key: string): void {
   const task = pollingTasks.get(key);
   if (task) {
     clearInterval(task.intervalId);
+    // Cancel any active requests for this polling key
+    cancellationManager.cancel(key);
     pollingTasks.delete(key);
   }
 }
@@ -134,6 +137,8 @@ export function resumeAllPolling(): void {
 export function cleanupPolling(): void {
   pollingTasks.forEach((task) => {
     clearInterval(task.intervalId);
+    // Cancel any active requests for this polling key
+    cancellationManager.cancel(task.key);
   });
   pollingTasks.clear();
 }
