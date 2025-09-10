@@ -257,6 +257,9 @@ describe('Integration Tests', () => {
       const testData = 'test-data';
       const fetcher = vi.fn(async () => testData);
 
+      // Mock console.error to suppress expected error output
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
       const errorSubscriber = vi.fn(() => {
         throw new Error('Subscriber error');
       });
@@ -272,8 +275,16 @@ describe('Integration Tests', () => {
       expect(normalSubscriber.calls.length).toBe(1);
       expect(normalSubscriber.calls[0]![0]).toBe(testData);
 
+      // Verify error was logged (but suppressed in output)
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error in subscriber callback:', 
+        expect.any(Error)
+      );
+
+      // Cleanup
       unsubscribe1();
       unsubscribe2();
+      consoleErrorSpy.mockRestore();
     });
   });
 

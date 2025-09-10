@@ -488,10 +488,10 @@ export const DEFAULT_OPTIONS: Required<RevaliOptions>;
 ### Completed (v0.3.0)
 
 - ✅ Polling / interval revalidation
+- ✅ Request cancellation (AbortController)
 
 ### In Progress (v0.3.0)
 
-- [ ] Request cancellation (AbortController)
 - [ ] Middleware system
 - [ ] Built-in React/Vue/Svelte hooks
 
@@ -581,6 +581,160 @@ clearCache('live-stats'); // Stops polling for this key
 2. **Use `refreshWhenHidden: false`** for non-critical data to save resources
 3. **Configure `dedupingInterval`** to prevent excessive requests
 4. **Monitor polling with `getPollingInfo()`** for debugging
+
+### Request Cancellation (AbortController)
+
+Revali supports request cancellation using the standard AbortController API, providing fine-grained control over request lifecycle:
+
+#### Basic Cancellation
+
+```typescript
+import { revaliFetch, cancel } from 'revali';
+
+// Cancel a specific request
+const key = 'user-data';
+const promise = revaliFetch(key, async (signal) => {
+  const response = await fetch('/api/user', { signal });
+  return response.json();
+});
+
+// Cancel the request
+cancel(key);
+
+// The promise will reject with CancellationError
+try {
+  await promise;
+} catch (error) {
+  if (error.name === 'CancellationError') {
+    console.log('Request was cancelled');
+  }
+}
+```
+
+#### External AbortController
+
+```typescript
+import { revaliFetch } from 'revali';
+
+// Use your own AbortController
+const controller = new AbortController();
+const promise = revaliFetch('data', async (signal) => {
+  const response = await fetch('/api/data', { signal });
+  return response.json();
+}, {
+  signal: controller.signal
+});
+
+// Cancel using your controller
+controller.abort();
+```
+
+#### Request Timeout
+
+```typescript
+import { revaliFetch } from 'revali';
+
+// Automatically cancel after timeout
+const data = await revaliFetch('slow-api', async (signal) => {
+  const response = await fetch('/api/slow', { signal });
+  return response.json();
+}, {
+  abortTimeout: 5000 // Cancel after 5 seconds
+});
+```
+
+#### Cancel on Revalidate
+
+```typescript
+import { revaliFetch } from 'revali';
+
+// Cancel previous request when starting new one
+const searchResults = await revaliFetch(`search-${query}`, async (signal) => {
+  const response = await fetch(`/api/search?q=${query}`, { signal });
+  return response.json();
+}, {
+  abortOnRevalidate: true // Cancel previous search when new search starts
+});
+```
+
+#### Cancellation API
+
+```typescript
+import { 
+  cancel, 
+  cancelAll, 
+  isCancelled, 
+  getCancellationInfo,
+  isCancellationError 
+} from 'revali';
+
+// Cancel specific request
+const cancelled = cancel('request-key');
+console.log('Cancelled:', cancelled);
+
+// Cancel all active requests
+const cancelledCount = cancelAll();
+console.log('Cancelled count:', cancelledCount);
+
+// Check if request was cancelled
+const wasCancelled = isCancelled('request-key');
+
+// Get cancellation information
+const info = getCancellationInfo();
+console.log('Active requests:', info.activeCount);
+console.log('Active keys:', info.keys);
+
+// Check if error is cancellation error
+try {
+  await someRequest();
+} catch (error) {
+  if (isCancellationError(error)) {
+    console.log('Request was cancelled');
+  }
+}
+```
+
+#### Best Practices for Cancellation
+
+1. **Always handle AbortSignal in your fetchers**:
+
+   ```typescript
+   const fetcher = async (signal?: AbortSignal) => {
+     const response = await fetch('/api/data', { signal });
+     if (!response.ok) throw new Error('Failed');
+     return response.json();
+   };
+   ```
+
+2. **Use `abortOnRevalidate` for search/filter scenarios**:
+
+   ```typescript
+   const searchData = await revaliFetch(`search-${query}`, fetcher, {
+     abortOnRevalidate: true // Cancel previous search
+   });
+   ```
+
+3. **Set reasonable timeouts for slow operations**:
+
+   ```typescript
+   const heavyComputation = await revaliFetch('compute', fetcher, {
+     abortTimeout: 30000 // 30 second timeout
+   });
+   ```
+
+4. **Clean up on component unmount** (React example):
+
+   ```typescript
+   useEffect(() => {
+     const controller = new AbortController();
+     
+     revaliFetch('component-data', fetcher, {
+       signal: controller.signal
+     });
+     
+     return () => controller.abort(); // Clean up on unmount
+   }, []);
+   ```
 
 ### Tree-Shaking Support
 

@@ -4,6 +4,7 @@
 
 import type { CacheEntry } from './types.js';
 import { startPolling, stopPolling, cleanupPolling } from './polling.js';
+import { cancellationManager } from './cancellation.js';
 
 // ---------- global cache state ----------
 const cache = new Map<string, CacheEntry<any>>();
@@ -24,6 +25,8 @@ export function setCacheEntry<T>(key: string, entry: CacheEntry<T>): void {
 }
 
 export function deleteCacheEntry(key: string): boolean {
+  // Cancel any active requests for this key
+  cancellationManager.cancel(key);
   // Stop polling for this key
   stopPolling(key);
   return cache.delete(key);
@@ -56,6 +59,8 @@ export function evictOldestEntry(): void {
   }
 
   if (oldestKey) {
+    // Cancel any active requests for the evicted entry
+    cancellationManager.cancel(oldestKey);
     // Stop polling for the evicted entry
     stopPolling(oldestKey);
     cache.delete(oldestKey);
@@ -72,10 +77,14 @@ export function ensureCacheSize(maxSize: number): void {
 
 export function clearCache(key?: string): void {
   if (key) {
+    // Cancel any active requests for specific key
+    cancellationManager.cancel(key);
     // Stop polling for specific key
     stopPolling(key);
     cache.delete(key);
   } else {
+    // Cancel all active requests when clearing all cache
+    cancellationManager.cancelAll();
     // Stop all polling when clearing all cache
     cleanupPolling();
     cache.clear();

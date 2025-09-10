@@ -6,7 +6,7 @@
 // ---------- Type Exports ----------
 export type { Fetcher, Subscriber, RevaliOptions, CacheEntry, RevaliState } from './core/types.js';
 
-export { DEFAULT_OPTIONS } from './core/types.js';
+export { DEFAULT_OPTIONS, CancellationError } from './core/types.js';
 
 // ---------- Core API Exports ----------
 export { revaliFetch } from './core/fetcher.js';
@@ -20,6 +20,16 @@ export { initAutoRevalidation, triggerRevalidation } from './core/revalidation.j
 
 // ---------- Polling Exports ----------
 export { getPollingInfo, hasActivePolling, cleanupPolling } from './core/polling.js';
+
+// ---------- Cancellation Exports ----------
+export {
+  cancel,
+  cancelAll,
+  isCancelled,
+  getCancellationInfo,
+  isCancellationError,
+} from './core/cancellation.js';
+export { cancelRequest, cancelAllRequests, isRequestCancelled } from './core/fetcher.js';
 
 // ---------- Auto-initialization ----------
 import { initAutoRevalidation } from './core/revalidation.js';
