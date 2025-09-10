@@ -223,6 +223,5 @@ export function cancelAllRequests(): number {
  * Check if a request is cancelled
  */
 export function isRequestCancelled(key: string): boolean {
-  const controller = cancellationManager.getController(key);
-  return controller?.signal.aborted ?? false;
+  return cancellationManager['cancelledKeys'].has(key);
 }

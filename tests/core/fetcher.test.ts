@@ -534,18 +534,31 @@ describe('Fetcher Module', () => {
       const { isRequestCancelled, cancelRequest } = await import('../../src/core/fetcher.js');
       
       const key = 'check-cancel-test';
-      const fetcher = vi.fn(async () => 'data');
+      const fetcher = vi.fn(async (signal?: AbortSignal) => {
+        return new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => resolve('data'), 100);
+          
+          signal?.addEventListener('abort', () => {
+            clearTimeout(timeoutId);
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        });
+      });
 
       expect(isRequestCancelled(key)).toBe(false);
 
       const promise = fetchWithDedup(key, fetcher, DEFAULT_OPTIONS);
       
-      setTimeout(() => {
-        cancelRequest(key);
-        expect(isRequestCancelled(key)).toBe(true);
-      }, 10);
+      // Wait a bit to ensure the request has started
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      // Cancel the request
+      const cancelled = cancelRequest(key);
+      expect(cancelled).toBe(true);
+      expect(isRequestCancelled(key)).toBe(true);
 
-      await promise.catch(() => {});
+      // Wait for the promise to be rejected
+      await expect(promise).rejects.toThrow();
     });
   });
 });
