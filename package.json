@@ -1,6 +1,6 @@
 {
   "name": "revali",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Framework-agnostic stale-while-revalidate (SWR) data fetching library. A minimal yet powerful caching library for JavaScript/TypeScript.",
   "keywords": [
     "swr",
