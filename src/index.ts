@@ -21,6 +21,10 @@ export { initAutoRevalidation, triggerRevalidation } from './core/revalidation.j
 // ---------- Polling Exports ----------
 export { getPollingInfo, hasActivePolling, cleanupPolling } from './core/polling.js';
 
+// ---------- Framework Exports ----------
+export { useRevali } from './frameworks/index.js';
+export type { UseRevaliResult } from './frameworks/index.js';
+
 // ---------- Cancellation Exports ----------
 export {
   cancel,
